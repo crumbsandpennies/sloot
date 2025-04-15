@@ -20,6 +20,7 @@
     "discord.js": "^14.18.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "unb-api": "^1.4.0",
     "url": "^0.11.4"
   },
   "devDependencies": {

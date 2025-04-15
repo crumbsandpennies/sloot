@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Events } from 'discord.js';
+import { editBalance } from '../econ.js';
 
 let state = {
   risks: new Map(),
@@ -33,10 +34,19 @@ const postRiskResult = function(riskMessageId, client) {
 
   if (result.catches.length) {
     result.catches.forEach(function(hunterId, i) {
-      resultMessage += `\n ${i}. <@${ hunterId }> (Payout: ${i === 0 ? '20' : i === 1 ? '10' : i === 2 ? '5' : '0'} coins)`;
+      const rewardAmount = i === 0 ? 20 : i === 1 ? 10 : i === 2 ? 5 : 0;
+      if (rewardAmount > 0) {
+        editBalance(result.risker.id, -rewardAmount, 'Risk fail');
+        editBalance(hunterId, rewardAmount, 'Hunter success');
+      }
+
+      resultMessage += `\n ${i}. <@${ hunterId }> (Payout: ${rewardAmount} coins)`;
     });
   } else {
-    resultMessage = `<@${ result.risker.id }> got away! Payout: 50 coins.`;
+    editBalance(result.risker.id, 50, 'Risk success');
+    // TODO: Charge the hunters because they missed the catch
+
+    resultMessage = `<@${ result.risker.id }> got away! (Payout: 50 coins.)`;
   }
 
   client.channels.cache.get(process.env.CAUGHT_CHANNEL).send(resultMessage);
