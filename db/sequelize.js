@@ -4,11 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'url';
 
-const sequelize = new Sequelize('slootdb', 'postgres', 'password', {
-  dialect:'postgres',
-  host: process.env.DATABASE_URL,
-  port: 5432,
-});
+const sequelize = new Sequelize(process.env.DATABASE_URL);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
