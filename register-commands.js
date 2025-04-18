@@ -11,6 +11,8 @@ const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = (await fs.readdir(commandsPath)).filter(file => file.endsWith('.js'));
 
+const args = process.argv.slice(2);
+
 for (const file of commandFiles) {
 	const filePath = path.join(commandsPath, file);
 	const { default: command } = await import(filePath);
@@ -28,7 +30,7 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 		console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
 		const data = await rest.put(
-			Routes.applicationGuildCommands(process.env.APP_ID, process.env.GUILD_ID),
+			Routes.applicationGuildCommands(process.env.APP_ID, args[0]),
 			{ body: commands },
 		);
 
