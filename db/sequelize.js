@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const sequelize = new Sequelize('slootdb', 'postgres', 'password', {
   dialect:'postgres',
-  host: 'localhost',
+  host: process.env.DATABASE_URL,
   port: 5432,
 });
 
@@ -18,6 +18,7 @@ const modelFiles = (await fs.readdir(modelsPath)).filter(file => file.endsWith('
 for (const file of modelFiles) {
   const filePath = path.join(modelsPath, file);
   const { default: modelDefine } = await import(filePath);
+
   modelDefine(sequelize, DataTypes);
 }
 
