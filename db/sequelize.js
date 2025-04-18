@@ -4,17 +4,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'url';
 
+const sequelize = new Sequelize('slootdb', 'postgres', 'password', {
+  dialect:'postgres',
+  host: 'localhost',
+  port: 5432,
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const modelsPath = path.join(__dirname, 'models');
 const modelFiles = (await fs.readdir(modelsPath)).filter(file => file.endsWith('.js'));
-
-const sequelize = new Sequelize('database', 'username', 'password', {
-	host: 'localhost',
-	dialect: 'sqlite',
-	logging: false,
-	storage: 'database.sqlite',
-});
 
 for (const file of modelFiles) {
   const filePath = path.join(modelsPath, file);
@@ -49,6 +48,7 @@ const force = process.argv.includes('--force') || process.argv.includes('-f');
 
 sequelize.sync({ force }).then(async () => {
   console.log('Database synced');
+  return;
 }).catch(console.error);
 
 export { models };
