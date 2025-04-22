@@ -176,7 +176,11 @@ export default {
       if (isRisker && !state.global_cooldown_active && message.attachments.size >= 1) {
         // Set cooldown for any risker to post again
         state.global_cooldown_active = true;
+        const cooldownExpiresAt = Math.floor((Date.now() + guild.risk_cooldown_global) / 1000);
+        const cooldownMessage = await client.channels.cache.get(riskChannel.discord_id).send(`Risk posting is now on cooldown until <t:${cooldownExpiresAt}:T>.`);
+
         setTimeout(() => {
+          deleteMessage(client, riskChannel.discord_id, cooldownMessage.id);
           state.global_cooldown_active = false;
         }, guild.risk_cooldown_global);
 
@@ -185,7 +189,7 @@ export default {
         state.risks.set(message.id, message);
         setTimeout(postRiskResult, guild.risk_timer, message, client, guild, riskChannel, caughtChannel);
       } else {
-        if (!message.pinned) {
+        if (!message.pinned && !(message.author.id === client.user.id)) {
           deleteMessage(client, riskChannel.discord_id, message.id);
         }
         // TODO: Can't send ephemeral message without interaction response. How better to show this?
