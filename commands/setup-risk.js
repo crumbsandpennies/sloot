@@ -22,6 +22,10 @@ export default {
         .setDescription('The channel where caught media and/or payouts will be posted.')
         .setRequired(true))
     .addRoleOption(option =>
+      option.setName('risker-role')
+        .setDescription('The risker role.')
+        .setRequired(true))
+    .addRoleOption(option =>
       option.setName('hunter-role')
         .setDescription('The hunter role.')
         .setRequired(true)),
@@ -35,6 +39,7 @@ export default {
         const guild = interaction.guild;
         const riskChannel = await interaction.options.getChannel('risk-channel');
         const caughtChannel = await interaction.options.getChannel('caught-channel');
+        const riskerRole = await interaction.options.getRole('risker-role');
         const hunterRole = await interaction.options.getRole('hunter-role');
 
         const [guildInstance] = await Guild.findOrCreate({
@@ -72,6 +77,17 @@ export default {
           defaults: {
             discord_id: hunterRole.id,
             type: ROLE_TYPES.HUNTER,
+            guild_id: guildInstance.id
+          }
+        });
+        await Role.findOrCreate({
+          where: {
+            guild_id: guildInstance.id,
+            type: ROLE_TYPES.RISKER
+          },
+          defaults: {
+            discord_id: riskerRole.id,
+            type: ROLE_TYPES.RISKER,
             guild_id: guildInstance.id
           }
         });

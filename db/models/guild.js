@@ -19,10 +19,20 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 10,
     },
-    risk_timeout: {
+    risk_timer: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 10000
+      defaultValue: 60000
+    },
+    risk_cooldown_global: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 300000
+    },
+    risk_cooldown_user: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 3600000
     }
   },
   {

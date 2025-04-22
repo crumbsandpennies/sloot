@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Events } from 'discord.js';
+import { MessageFlags, Events } from 'discord.js';
 import { editBalance } from '../econ.js';
 import { models } from '../db/sequelize.js';
 import {
@@ -7,11 +7,12 @@ import {
   ROLE_TYPES
 } from '../constants.js';
 
-const { Guild, Member, Role } = models;
+const { Guild, Member } = models;
 
 let state = {
   risks: new Map(),
   catches: new Map(),
+  global_cooldown_active: false,
 };
 
 const deleteMessage = function(client, channelId, messageId) {
@@ -21,25 +22,43 @@ const deleteMessage = function(client, channelId, messageId) {
 }
 
 const postRiskResult = async function(message, client, guild, riskChannel, caughtChannel) {
-  // TODO: Implement streaks
   const guildId = message.guild.id;
   const riskMessageId = message.id;
+  await message.guild.members.fetch();
+
+  const guildInstance = await Guild.findOrCreate({
+    where: {
+      discord_id: guildId
+    },
+    defaults: {
+      discord_id: guildId
+    }
+  });
 
   const [risker] = await Member.findOrCreate({
     where: {
       discord_id: message.author.id
     },
     defaults: {
-      discord_id: message.author.id
+      discord_id: message.author.id,
+      guild_id: guildInstance.id
     }
   });
 
-  deleteMessage(client, riskChannel.discord_id, riskMessageId);
+  const [hunterRole] = await guild.getRoles({
+    where: {
+      type: ROLE_TYPES.HUNTER
+    }
+  });
 
   let result = {
     risker: state.risks.get(riskMessageId).author,
     catches: []
   };
+
+  state.risks.delete(riskMessageId);
+  deleteMessage(client, riskChannel.discord_id, riskMessageId);
+
 
   if (state.catches.size >= 1) {
     state.catches.forEach(function(caughtRiskMessageId, hunterId) {
@@ -61,9 +80,15 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
           discord_id: hunterId
         },
         defaults: {
-          discord_id: hunterId
+          discord_id: hunterId,
+          guild_id: guildInstance.id
         }
       });
+
+      const discordMember = message.guild.members.cache.get(hunterId);
+      if (!discordMember.roles.cache.has(hunterRole.discord_id)) {
+        continue;
+      }
 
       if (rewardAmount > 0) {
         editBalance(guildId, result.risker.id, -rewardAmount, 'Risk fail');
@@ -78,16 +103,18 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
       resultMessage += `\n ${i}. <@${ hunterId }> (${rewardAmount} coins)`;
       i++;
     };
+    risker.current_risk_streak = 0;
+    await risker.save();
   } else {
-    editBalance(guildId, result.risker.id, guild.risk_payout, 'Risk success');
-    risker.lifetime_wins += guild.risk_payout;
-    const [hunterRole] = await guild.getRoles({
-      where: {
-        type: ROLE_TYPES.HUNTER
-      }
-    });
+    risker.current_risk_streak += 1;
+    if (risker.current_risk_streak > risker.highest_risk_streak) {
+      risker.highest_risk_streak = risker.current_risk_streak;
+    }
+    let totalPayout = guild.risk_payout * risker.current_risk_streak;
 
-    await message.guild.members.fetch();
+    editBalance(guildId, result.risker.id, totalPayout, 'Risk success');
+    risker.lifetime_wins += totalPayout;
+
     const hunters = message.guild.roles.cache.get(hunterRole.discord_id).members;
 
     await Promise.all(hunters.map(async function (member) {
@@ -96,14 +123,17 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
           discord_id: member.id
         },
         defaults: {
-          discord_id: member.id
+          discord_id: member.id,
+          guild_id: guildInstance.id
         }
       });
 
+      // TODO: Currently only penalizing hunters for misses, which we may or may not want.
+      // If we keep this functionality, we may want to transfer the hunter miss fee to the risker
       editBalance(guildId, member.id, -guild.hunter_missed_fee, 'Hunter fail');
       hunter.lifetime_losses += guild.hunter_missed_fee;
 
-      hunter.save();
+      await hunter.save();
       return;
     }));
 
@@ -136,13 +166,36 @@ export default {
     });
 
     if (message.channel.id === riskChannel.discord_id) {
-      if (message.attachments.size >= 1) {
+      const [riskerRole] = await guild.getRoles({
+        where: {
+          type: ROLE_TYPES.RISKER
+        }
+      });
+      const isRisker = await message.member.roles.cache.get(riskerRole.discord_id);
+
+      if (isRisker && !state.global_cooldown_active && message.attachments.size >= 1) {
+        // Set cooldown for any risker to post again
+        state.global_cooldown_active = true;
+        setTimeout(() => {
+          state.global_cooldown_active = false;
+        }, guild.risk_cooldown_global);
+
+        // TODO: Set cooldown for specific risker to post again
+
         state.risks.set(message.id, message);
-        setTimeout(postRiskResult, guild.risk_timeout, message, client, guild, riskChannel, caughtChannel);
+        setTimeout(postRiskResult, guild.risk_timer, message, client, guild, riskChannel, caughtChannel);
       } else {
         if (!message.pinned) {
           deleteMessage(client, riskChannel.discord_id, message.id);
         }
+        // TODO: Can't send ephemeral message without interaction response. How better to show this?
+        // if (state.global_cooldown_active) {
+          // TODO: Get precise timer for cooldown
+          // client.channels.cache.get(riskChannel.discord_id).send({
+          //   content: 'Risk posting is on cooldown. Try again soon.',
+          //   flags: MessageFlags.Ephemeral
+          // });
+        // }
       }
     }
   

@@ -4,7 +4,8 @@ const CHANNEL_TYPES = {
 };
 
 const ROLE_TYPES = {
-  HUNTER: 'hunter'
+  HUNTER: 'hunter',
+  RISKER: 'risker'
 };
 
 export {
