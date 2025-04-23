@@ -74,7 +74,7 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
   if (result.catches.length) {
     let i = 0;
     for (const hunterId of result.catches) {
-      const rewardAmount = i === 0 ? guild.hunter_payout : i === 1 ? (guild.hunter_payout / 2) : i === 2 ? (guild.hunter_payout / 4) : 0;
+      const rewardAmount = i === 0 ? guild.hunter_payout : i === 1 ? (parseInt(guild.hunter_payout / 2)) : i === 2 ? (parseInt(guild.hunter_payout / 4)) : 0;
       const [hunter] = await Member.findOrCreate({
         where: {
           discord_id: hunterId
