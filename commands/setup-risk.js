@@ -45,6 +45,9 @@ export default {
         const [guildInstance] = await Guild.findOrCreate({
           where: {
             discord_id: guild.id
+          },
+          defaults: {
+            discord_id: guild.id
           }
         });
         await Channel.findOrCreate({

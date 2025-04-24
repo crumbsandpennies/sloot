@@ -148,8 +148,11 @@ export default {
   name: Events.MessageCreate,
   once: false,
   async execute(client, message) {  
-    const guild = await Guild.findOne({
+    const [guild] = await Guild.findOrCreate({
       where: {
+        discord_id: message.guild.id
+      },
+      defaults: {
         discord_id: message.guild.id
       }
     });
