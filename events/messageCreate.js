@@ -59,7 +59,6 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
   state.risks.delete(riskMessageId);
   deleteMessage(client, riskChannel.discord_id, riskMessageId);
 
-
   if (state.catches.size >= 1) {
     state.catches.forEach(function(caughtRiskMessageId, hunterId) {
       if (caughtRiskMessageId === riskMessageId) {
@@ -74,6 +73,11 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
   if (result.catches.length) {
     let i = 0;
     for (const hunterId of result.catches) {
+      const discordMember = message.guild.members.cache.get(hunterId);
+      if (!discordMember.roles.cache.has(hunterRole.discord_id)) {
+        continue;
+      }
+
       const rewardAmount = i === 0 ? guild.hunter_payout : i === 1 ? (parseInt(guild.hunter_payout / 2)) : i === 2 ? (parseInt(guild.hunter_payout / 4)) : 0;
       const [hunter] = await Member.findOrCreate({
         where: {
@@ -85,15 +89,10 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
         }
       });
 
-      const discordMember = message.guild.members.cache.get(hunterId);
-      if (!discordMember.roles.cache.has(hunterRole.discord_id)) {
-        continue;
-      }
-
       if (rewardAmount > 0) {
-        editBalance(guildId, result.risker.id, -rewardAmount, 'Risk fail');
+        await editBalance(guildId, result.risker.id, -rewardAmount, 'Risk fail');
         risker.lifetime_losses += rewardAmount;
-        editBalance(guildId, hunterId, rewardAmount, 'Hunter success');
+        await editBalance(guildId, hunterId, rewardAmount, 'Hunter success');
         hunter.lifetime_wins += rewardAmount;
 
         await risker.save();
@@ -112,7 +111,7 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
     }
     let totalPayout = guild.risk_payout * risker.current_risk_streak;
 
-    editBalance(guildId, result.risker.id, totalPayout, 'Risk success');
+    await editBalance(guildId, result.risker.id, totalPayout, 'Risk success');
     risker.lifetime_wins += totalPayout;
 
     const hunters = message.guild.roles.cache.get(hunterRole.discord_id).members;
@@ -130,7 +129,7 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
 
       // TODO: Currently only penalizing hunters for misses, which we may or may not want.
       // If we keep this functionality, we may want to transfer the hunter miss fee to the risker
-      editBalance(guildId, member.id, -guild.hunter_missed_fee, 'Hunter fail');
+      await editBalance(guildId, member.id, -guild.hunter_missed_fee, 'Hunter fail');
       hunter.lifetime_losses += guild.hunter_missed_fee;
 
       await hunter.save();
@@ -138,7 +137,7 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
     }));
 
     await risker.save();
-    resultMessage = `<@${ result.risker.id }> got away! (${guild.risk_payout} coins)`;
+    resultMessage = `<@${ result.risker.id }> got away! (${totalPayout} coins)`;
   }
 
   client.channels.cache.get(caughtChannel.discord_id).send(resultMessage);
@@ -177,7 +176,7 @@ export default {
         // Set cooldown for any risker to post again
         state.global_cooldown_active = true;
         const cooldownExpiresAt = Math.floor((Date.now() + guild.risk_cooldown_global) / 1000);
-        const cooldownMessage = await client.channels.cache.get(riskChannel.discord_id).send(`Risk posting is now on cooldown until <t:${cooldownExpiresAt}:T>.`);
+        const cooldownMessage = await client.channels.cache.get(riskChannel.discord_id).send(`Risk posting is now on cooldown. It will be available again <t:${cooldownExpiresAt}:R>.`);
 
         setTimeout(() => {
           deleteMessage(client, riskChannel.discord_id, cooldownMessage.id);
