@@ -148,14 +148,16 @@ export default {
   name: Events.MessageCreate,
   once: false,
   async execute(client, message) {  
-    const [guild] = await Guild.findOrCreate({
+    const guild = await Guild.findOne({
       where: {
-        discord_id: message.guild.id
-      },
-      defaults: {
         discord_id: message.guild.id
       }
     });
+
+    if (!guild) {
+      return;
+    }
+
     const [riskChannel] = await guild.getChannels({
       where: {
         type: CHANNEL_TYPES.RISK
