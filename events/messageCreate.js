@@ -12,12 +12,12 @@ const { Guild, Member } = models;
 let state = {
   risks: new Map(),
   catches: new Map(),
-  global_cooldown_active: false,
+  global_cooldown_timer: null,
 };
 
-const deleteMessage = function(client, channelId, messageId) {
-  client.channels.fetch(channelId).then(channel => {
-    channel.messages.delete(messageId);
+const deleteMessage = async function(client, channelId, messageId) {
+  await client.channels.fetch(channelId).then(async function(channel) {
+    await channel.messages.delete(messageId);
   });
 }
 
@@ -57,7 +57,7 @@ const postRiskResult = async function(message, client, guild, riskChannel, caugh
   };
 
   state.risks.delete(riskMessageId);
-  deleteMessage(client, riskChannel.discord_id, riskMessageId);
+  await deleteMessage(client, riskChannel.discord_id, riskMessageId);
 
   if (state.catches.size >= 1) {
     state.catches.forEach(function(caughtRiskMessageId, hunterId) {
@@ -177,15 +177,12 @@ export default {
       });
       const isRisker = await message.member.roles.cache.get(riskerRole.discord_id);
 
-      if (isRisker && !state.global_cooldown_active && message.attachments.size >= 1) {
+      if (isRisker && !state.global_cooldown_timer && message.attachments.size >= 1) {
         // Set cooldown for any risker to post again
-        state.global_cooldown_active = true;
-        const cooldownExpiresAt = Math.floor((Date.now() + guild.risk_cooldown_global) / 1000);
-        const cooldownMessage = await client.channels.cache.get(riskChannel.discord_id).send(`Risk posting is now on cooldown. It will be available again <t:${cooldownExpiresAt}:R>.`);
+        state.global_cooldown_timer = Date.now() + guild.risk_cooldown_global;
 
-        setTimeout(() => {
-          deleteMessage(client, riskChannel.discord_id, cooldownMessage.id);
-          state.global_cooldown_active = false;
+        setTimeout(async function() {
+          state.global_cooldown_timer = null;
         }, guild.risk_cooldown_global);
 
         // TODO: Set cooldown for specific risker to post again
@@ -195,15 +192,15 @@ export default {
       } else {
         if (!message.pinned && !(message.author.id === client.user.id)) {
           deleteMessage(client, riskChannel.discord_id, message.id);
+
+          const cooldownExpiresAt = Math.floor(state.global_cooldown_timer / 1000);
+          const cooldownMessage = await client.channels.cache.get(riskChannel.discord_id).send(`<@${message.author.id}> Risk posting is currently on cooldown. It will be available again <t:${cooldownExpiresAt}:R>.`);
+          const deleteMessageTimer = state.global_cooldown_timer - Date.now();
+
+          setTimeout(async function() {
+            await deleteMessage(client, riskChannel.discord_id, cooldownMessage.id);
+          }, deleteMessageTimer);
         }
-        // TODO: Can't send ephemeral message without interaction response. How better to show this?
-        // if (state.global_cooldown_active) {
-          // TODO: Get precise timer for cooldown
-          // client.channels.cache.get(riskChannel.discord_id).send({
-          //   content: 'Risk posting is on cooldown. Try again soon.',
-          //   flags: MessageFlags.Ephemeral
-          // });
-        // }
       }
     }
   
