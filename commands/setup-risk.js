@@ -30,7 +30,7 @@ export default {
         .setDescription('The hunter role.')
         .setRequired(true)),
     async execute(interaction) {
-      if (!interaction.member.permissions.has(Flags.ManageRoles) || !interaction.member.permissions.has(Flags.ManageChannels)) {
+      if (!interaction.member.permissions.has(Flags.Administrator)) {
         await interaction.reply("You don't have permission to use this.");
         return;
       }

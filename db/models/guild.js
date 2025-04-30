@@ -33,7 +33,17 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 3600000
-    }
+    },
+    daily_payout_min: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 50
+    },
+    daily_payout_max: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 120
+    },
   },
   {
     tableName: 'Guild'

@@ -5,9 +5,7 @@ const { Member } = models;
 const members = await Member.findAll();
 
 members.forEach(async (member) => {
-  if (member.daily_claimed) {
-    member.daily_streak += 1;
-  } else {
+  if (!member.daily_claimed) {
     member.daily_streak = 0;
   }
 
