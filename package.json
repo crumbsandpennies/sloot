@@ -13,8 +13,9 @@
     "start": "node app.js",
     "register": "node register-commands.js",
     "database": "node ./db/sequelize.js",
-    "migrate": "node-pg-migrate -m './db/migrations'",
+    "migrate": "PGSSLMODE=DATABASE_SSL_MODE node-pg-migrate -m './db/migrations'",
     "reset-daily": "node reset-daily.js",
+    "postinstall": "npm run migrate up && npm run database",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
