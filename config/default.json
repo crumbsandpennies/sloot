@@ -1,5 +1,5 @@
 {
   "db": {
-    "reject-nauthorized": false
+    "reject-unauthorized": false
   }
 }
