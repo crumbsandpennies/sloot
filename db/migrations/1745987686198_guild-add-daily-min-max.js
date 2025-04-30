@@ -14,5 +14,5 @@ export const up = (pgm) => {
 };
 
 export const down = (pgm) => {
-  pgm.dropColumns('Member', [ 'daily_payout_min', 'daily_payout_max' ]);
+  pgm.dropColumns('Guild', [ 'daily_payout_min', 'daily_payout_max' ]);
 };
