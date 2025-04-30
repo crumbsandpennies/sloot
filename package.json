@@ -13,6 +13,8 @@
     "start": "node app.js",
     "register": "node register-commands.js",
     "database": "node ./db/sequelize.js",
+    "migrate": "node-pg-migrate -m './db/migrations'",
+    "reset-daily": "node reset-daily.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -30,6 +32,8 @@
   "devDependencies": {
     "@eslint/js": "^9.24.0",
     "eslint": "^9.24.0",
-    "globals": "^16.0.0"
+    "globals": "^16.0.0",
+    "mysql2": "^3.14.1",
+    "node-pg-migrate": "^7.9.1"
   }
 }

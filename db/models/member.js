@@ -23,6 +23,16 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0
+    },
+    daily_claimed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    daily_streak: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     }
   },
   {
