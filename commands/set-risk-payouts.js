@@ -23,7 +23,10 @@ export default {
         .setRequired(true)),
     async execute(interaction) {
       if (!interaction.member.permissions.has(Flags.Administrator)) {
-        await interaction.reply("You don't have permission to use this.");
+        await interaction.reply({
+          content: "You don't have permission to use this.",
+          flags: MessageFlags.Ephemeral
+        });
         return;
       }
 
