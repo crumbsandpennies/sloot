@@ -55,7 +55,7 @@ export default {
 
     if (member.daily_claimed) {
       await interaction.reply({
-        content: `You've already claimed your daily today. Try again at <t:${getNextUTCMidnight()}:T>.`,
+        content: `You've already claimed your daily today. Try again <t:${getNextUTCMidnight()}>.`,
         flags: MessageFlags.Ephemeral
       });
 
@@ -74,9 +74,6 @@ export default {
     await editBalance(interaction.guild.id, interaction.user.id, finalPayout, 'daily');
     await member.save();
 
-    await interaction.reply({
-      content: `You got ${finalPayout} coins (${basePayout} base x ${multiplier} multiplier). You've claimed your daily ${member.daily_streak} days in a row!`,
-      flags: MessageFlags.Ephemeral
-    });
+    await interaction.reply(`You got ${finalPayout} coins (${basePayout} base x ${multiplier} multiplier). You've claimed your daily ${member.daily_streak} days in a row!`);
   }
 };
